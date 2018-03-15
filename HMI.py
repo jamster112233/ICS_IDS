@@ -5,10 +5,10 @@ import pygame
 import matplotlib.pyplot as plt
 import ICSView
 import ICSModel
-import networkEncoder as ne
+import NetworkEncoder as ne
 from pymodbus3.client.sync import ModbusTcpClient
 
-MODBUS_SLAVE = '192.168.56.102'
+MODBUS_SLAVE = 'ms.ics.example.com'
 
 ROOM_TEMP = 15
 TIME_STEP = 1
