@@ -21,43 +21,44 @@ import math
 def modbusEncode(baseVal, bytesInt, bytesReal, outArr):
     if bytesInt % 2 != 0 or bytesReal % 2 != 0:
         return 0
+    
+    intRunner = int(math.floor(baseVal))
 
-    intRunner = math.floor(baseVal)
-
-    if len(outArr) != 0:
-        index = len(outArr)
+if len(outArr) != 0:
+    index = len(outArr)
     else:
         index = 0
 
-    for i in range(bytesInt - 2, -1, -2):
-        outArr.append(intRunner >> (i * 8))
-        intRunner -= (outArr[index] << (i * 8))
-        index += 1
-
+for i in range(bytesInt - 2, -1, -2):
+    outArr.append(intRunner >> (i * 8))
+    intRunner -= (outArr[index] << (i * 8))
+    index += 1
+    
     realRunner = baseVal - math.floor(baseVal)
     realRunner *= (2 ** (bytesReal * 8))
-    realRunner = math.floor(realRunner)
-
+    realRunner = int(math.floor(realRunner))
+    
     for i in range(bytesReal - 2, -1, -2):
         outArr.append(realRunner >> (i * 8))
         realRunner -= (outArr[index] << (i * 8))
         index += 1
-
+    
     return outArr
 
 def modbusDecode(startIndex, bytesInt, bytesReal, inArr):
     if bytesInt % 2 != 0 or bytesReal % 2 != 0:
         return 0
-
+    
     value = 0
     index = startIndex
-
+    
     for i in range(bytesInt - 2, -1, -2):
         value += inArr[index] << (i * 8)
         index += 1
-
+    
     for i in range(bytesReal - 2, -1, -2):
         value += (inArr[index] << (i * 8))/(2 ** (bytesReal * 8))
         index += 1
-
+    
     return value
+
