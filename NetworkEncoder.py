@@ -24,8 +24,8 @@ def modbusEncode(baseVal, bytesInt, bytesReal, outArr):
     
     intRunner = int(math.floor(baseVal))
 
-if len(outArr) != 0:
-    index = len(outArr)
+    if len(outArr) != 0:
+        index = len(outArr)
     else:
         index = 0
 
