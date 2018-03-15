@@ -89,7 +89,7 @@ class ContainerGraphics():
         self.coordTopLeft = coordTopLeft
         self.height = height
         self.width = width
-        self.pixPerLitre = height / containerOverflow
+        self.pixPerLitre = float(height) / containerOverflow
         self.lastOverflow = 0.0
 
     def drawAll(self, screen, waterLevel, overflowAmount, temperature):
@@ -106,7 +106,6 @@ class ContainerGraphics():
 
         pxWaterLevel = math.floor(self.coordTopLeft[1] + self.height - (waterLevel * self.pixPerLitre))
         textCol = white
-
         if(self.coordTopLeft[1] + self.height - pxWaterLevel > 0):
             pygame.draw.rect(screen, blue, pygame.Rect(self.coordTopLeft[0] + 2,
                                                    pxWaterLevel, self.width - 2, self.coordTopLeft[1] + self.height - pxWaterLevel))

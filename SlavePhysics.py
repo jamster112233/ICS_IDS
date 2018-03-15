@@ -12,9 +12,6 @@ import logging
 #---------------------------------------------------------------------------#
 # This will simply send everything logged to console
 #---------------------------------------------------------------------------#
-logging.basicConfig()
-log = logging.getLogger()
-log.setLevel(logging.DEBUG)
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 
@@ -125,15 +122,15 @@ while seconds < TIME_PERIOD + 1 or done:
     #Perfect attack scenario attack here - misinformation from master
 
     #Await response from HMI
-    print(seconds)
+    #print(seconds)
     while serverSeconds != 0:
         result = client.read_holding_registers(0, 21, unit=1)
-        print(result)
-        print(result.registers)
+    #    print(result)
+    #    print(result.registers)
         addWater = ne.modbusDecode(0, 2, 2, result.registers)
         addFire = ne.modbusDecode(2, 2, 0, result.registers)
         serverSeconds = ne.modbusDecode(20, 2, 0, result.registers)
-    print(seconds)
+    #print(seconds)
     #Run physics
     if addFire == 1:
         powerIn = min(HEATER_POWER, powerIn * 1.02)
