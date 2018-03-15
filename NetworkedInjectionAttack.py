@@ -2,7 +2,7 @@ import random
 import networkEncoder as ne
 from pymodbus.client.sync import ModbusTcpClient
 
-MODBUS_SLAVE = '192.168.56.102'
+MODBUS_SLAVE = 'ms.ics.example.com'
 
 random.seed(100)
 response = ''
@@ -42,7 +42,7 @@ if response == 'r':
             waterLevel = ne.modbusDecode(0, 4, 4, result.registers)
 
             outputs = []
-            levelElements = ne.modbusEncode(500000 - 1000, 4, 4, outputs)
+            levelElements = ne.modbusEncode(490000, 4, 4, outputs)
             result.registers[0] = levelElements[0]
             result.registers[1] = levelElements[1]
             result.registers[2] = levelElements[2]
@@ -57,7 +57,7 @@ if response == 'r':
             waterLevel = ne.modbusDecode(0, 4, 4, result.registers)
 
             outputs = []
-            levelElements = ne.modbusEncode(500000 - 1000, 4, 4, outputs)
+            levelElements = ne.modbusEncode(499000, 4, 4, outputs)
             result.registers[0] = levelElements[0]
             result.registers[1] = levelElements[1]
             result.registers[2] = levelElements[2]
@@ -161,8 +161,6 @@ if response == 'c':
                 addWater = 500 + (addWater * (random.randint(105, 110) / 100))
             else:
                 addWater = 500 + (addWater * (random.randint(100, 105) / 100))
-
-            print("ADDING", addWater)
 
             outputs = []
             result.registers[0] = ne.modbusEncode(addWater, 2, 2, outputs)[0]

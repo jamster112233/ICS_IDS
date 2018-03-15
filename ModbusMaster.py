@@ -1,9 +1,9 @@
 import queue
 import random
-import networkEncoder as ne
+import NetworkEncoder as ne
 from pymodbus3.client.sync import ModbusTcpClient
 
-MODBUS_SLAVE = '192.168.56.102'
+MODBUS_SLAVE = 'ms.ics.example.com'
 
 random.seed(100)
 waterLevel = 0
@@ -15,11 +15,6 @@ while waterLevel == 0:
     waterTemp = ne.modbusDecode(4, 2, 2, result.registers)
     power = ne.modbusDecode(6, 6, 2, result.registers)
     steamStep = ne.modbusDecode(10, 2, 4, result.registers)
-
-    print(waterLevel)
-    print(waterTemp)
-    print(power)
-    print(steamStep)
     client.close()
 
 #Start the fire
@@ -63,7 +58,6 @@ while True:
 
     waterAddQ = waterAddQ2
     addWater = runningWaterAdd / waterAddQ.qsize()
-    print(addWater)
 
     # Add fire? always
     addFire = 1
