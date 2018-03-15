@@ -29,10 +29,10 @@ def modbusEncode(baseVal, bytesInt, bytesReal, outArr):
     else:
         index = 0
 
-for i in range(bytesInt - 2, -1, -2):
-    outArr.append(intRunner >> (i * 8))
-    intRunner -= (outArr[index] << (i * 8))
-    index += 1
+    for i in range(bytesInt - 2, -1, -2):
+        outArr.append(intRunner >> (i * 8))
+        intRunner -= (outArr[index] << (i * 8))
+        index += 1
     
     realRunner = baseVal - math.floor(baseVal)
     realRunner *= (2 ** (bytesReal * 8))
