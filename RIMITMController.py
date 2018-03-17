@@ -16,13 +16,13 @@ while True:
 
     f = open("RIAttackMode.txt", "w+")
 
-print("")
-print("")
+    print("")
+    print("")
 
-if response == 'q':
-    f.write('n')
-    f.close()
-    exit(0)
+    if response == 'q':
+        f.write('n')
+        f.close()
+        exit(0)
     else:
         f.write(response)
         f.close()
