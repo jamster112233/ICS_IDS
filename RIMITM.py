@@ -4,7 +4,7 @@ from netfilterqueue import NetfilterQueue
 from pymodbus.client.sync import ModbusTcpClient
 from scapy.all import *
 
-MODBUS_SLAVE = 'ms.ics.example.com'
+MODBUS_SLAVE = '10.10.3.101'
 
 random.seed(100)
 response = ''
@@ -26,7 +26,6 @@ def plx(x):
 def runAttack(response, pkt):
     sc_pkt = IP(pkt.get_payload())
     ip_hex = toHex(str(sc_pkt))
-
     if sc_pkt[IP].src == MODBUS_SLAVE and sc_pkt[TCP].sport == 502 and ip_hex[118:120] == '03' and ip_hex[120:122] == '2a':
         registers = []
 
