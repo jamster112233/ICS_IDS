@@ -124,6 +124,7 @@ while seconds < TIME_PERIOD + 1 or done:
     #Await response from HMI
     #print(seconds)
     while serverSeconds != 0:
+        time.sleep(0.01)
         result = client.read_holding_registers(0, 21, unit=1)
     #    print(result)
     #    print(result.registers)
