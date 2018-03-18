@@ -16,7 +16,7 @@ while True:
     while response != 'n' and response != '1' and response != '2' and response != '3' and response != '4' and response != 'q':
         response = str(raw_input('>'))
 
-    f = open("RIAttackMode.txt", "w+")
+    f = open("RIAMode.txt", "w+")
     h = open("RIAHistory.txt", "a")
     h.write(response + '\n')
 
