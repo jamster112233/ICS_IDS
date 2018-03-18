@@ -57,8 +57,8 @@ def modbusDecode(startIndex, bytesInt, bytesReal, inArr):
         index += 1
     
     for i in range(bytesReal - 2, -1, -2):
-        value += (inArr[index] << (i * 8))/(2 ** (bytesReal * 8))
+        value += float(inArr[index] << (i * 8))/(2 ** (bytesReal * 8))
         index += 1
-    
+
     return value
 

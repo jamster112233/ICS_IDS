@@ -1,4 +1,5 @@
 import math
+import time
 import queue
 import random
 import pygame
@@ -6,7 +7,7 @@ import matplotlib.pyplot as plt
 import ICSView
 import ICSModel
 import NetworkEncoder as ne
-from pymodbus3.client.sync import ModbusTcpClient
+from pymodbus.client.sync import ModbusTcpClient
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 
@@ -100,11 +101,12 @@ while seconds < TIME_PERIOD + 2 or done:
 
     #Add water? do this first then run the fire on it too
     while serverSeconds < seconds:
+        time.sleep(0.01)
         result = client.read_holding_registers(0, 21, unit=1)
         addWater = ne.modbusDecode(0, 2, 2, result.registers)
         addFire = ne.modbusDecode(2, 2, 0, result.registers)
         waterLevel = ne.modbusDecode(3, 4, 4, result.registers)
-        waterTemp = ne.modbusDecode(7, 2, 2, result.registers)
+        waterTemp = float(ne.modbusDecode(7, 2, 2, result.registers))
         powerOut = ne.modbusDecode(9, 6, 2, result.registers)
         steamStep = ne.modbusDecode(13, 2, 4, result.registers)
         powerIn = ne.modbusDecode(16, 6, 2, result.registers)
