@@ -1,6 +1,8 @@
-
+f = open("CIAHistory.txt", "w+")
+f.write('START\n')
+f.close()
 while True:
-    print("Response injection attack")
+    print("Command injection attack")
     print("Enter stealth level:")
     print("[n] - Do not modify")
     print("[1] - Blatantly obvious")
@@ -15,9 +17,8 @@ while True:
         response = str(raw_input('>'))
 
     f = open("CIAttackMode.txt", "w+")
-
-    print("")
-    print("")
+    h = open("CIAHistory.txt", "a")
+    h.write(response + '\n')
 
     if response == 'q':
         f.write('n')
@@ -26,3 +27,5 @@ while True:
     else:
         f.write(response)
         f.close()
+
+    print("\n")
