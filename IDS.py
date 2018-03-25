@@ -4,8 +4,6 @@ from random import randint
 import pandas as pd
 import os
 import sys
-import sh
-import subprocess
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 response = ''
@@ -80,7 +78,7 @@ class IDS():
                 if spoofIPres == None:
                     spoofTTL = randint(32, 60)
                     f = open("ScrambledIPs.txt", "a")
-                    f.write(spoofIP + "," + ipSrc + "," + spoofTTL + "\n")
+                    f.write(spoofIP + "," + ipSrc + "," + str(spoofTTL) + "\n")
                     f.close()
                 return spoofIP, ipDst, spoofTTL
             else:
@@ -101,7 +99,7 @@ class IDS():
         df.tail()
         allScrambled = df.ix[:, 0:3].values
         index = randint(0, len(allScrambled))
-        return allScrambled[index][0], allScrambled[index][2]
+        return allScrambled[index][0], allScrambled[index][1], allScrambled[index][2]
 
     def fileContainsIP(self, ipStr):
         print("contip")
