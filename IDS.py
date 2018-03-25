@@ -27,7 +27,7 @@ class IDS():
         sc_pkt = IP(pkt.get_payload())
         spoof = True
         if spoof:
-            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst)
+            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
             sc_pkt[IP].src = ipSrc
             sc_pkt[IP].dst = ipDst
             sc_pkt[IP].ttl = ipTTL
@@ -64,7 +64,7 @@ class IDS():
         pkt.set_payload(str(sc_pkt))
         pkt.accept()
 
-    def spoofIP(self, ipSrc, ipDst):
+    def spoofIP(self, ipSrc, ipDst, ipTTL):
         print(self)
         spoofIP, realIP, spoofTTL = self.fileContainsIP(self, ipDst)
         if spoofIP == None:
