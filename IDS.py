@@ -4,6 +4,8 @@ from random import randint
 import pandas as pd
 import os
 import sys
+import sh
+import subprocess
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 response = ''
@@ -14,7 +16,6 @@ class IDS():
         f.write("START\n")
         f.close()
         os.system("iptables-restore < /etc/iptables/intall")
-        os.system("cat ScrambledIPs.txt | tail -n 500 > ScrambledIPs.txt")
         nfqueue = NetfilterQueue()
         nfqueue.bind(1, self.callback, 1024)
         try:
@@ -26,11 +27,13 @@ class IDS():
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
         spoof = True
+        print(os.path.getsize("ScrambledIPs.txt"))
         if spoof:
             ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
+            print(ipSrc, ipDst, ipTTL)
             sc_pkt[IP].src = ipSrc
             sc_pkt[IP].dst = ipDst
-            sc_pkt[IP].ttl = ipTTL
+            sc_pkt[IP].ttl = int(ipTTL)
 
         if(IP in sc_pkt):
             print "IP/", sys.stdout.write('')
@@ -61,33 +64,37 @@ class IDS():
             f.close()
 
         sc_pkt.show2()
+        print(str(pkt))
         pkt.set_payload(str(sc_pkt))
         pkt.accept()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL):
         print(self)
-        spoofIP, realIP, spoofTTL = self.fileContainsIP(self, ipDst)
+        spoofIP, realIP, spoofTTL = self.fileContainsIP(ipDst)
+        print(spoofIP, realIP, spoofTTL)
         if spoofIP == None:
             if randint(1, 100) <= 30:
                 spoofIP = self.generateRandomIP()
                 # Are we using this IP?
-                spoofIPres, realIP, spoofTTLres = self.fileContainsIP(spoofIP)
+                spoofIPres, realIP, spoofTTL = self.fileContainsIP(spoofIP)
                 if spoofIPres == None:
                     spoofTTL = randint(32, 60)
                     f = open("ScrambledIPs.txt", "a")
                     f.write(spoofIP + "," + ipSrc + "," + spoofTTL + "\n")
                     f.close()
+                return spoofIP, ipDst, spoofTTL
             else:
                 # 70% random source
-                spoofIP, spoofTTL = self.getRandomIPFile()
+                spoofIP, ipReal, spoofTTL = self.getRandomIPFile()
                 return spoofIP, ipDst, spoofTTL
         else:
             # only backwards
             return ipSrc, realIP, ipTTL
 
     def getRandomIPFile(self):
-        if (os.stat("ScrambledIPs.txt").st_size == 0):
+        if (os.path.getsize("ScrambledIPs.txt") == 0):
             return None, None, None
+        print("reading")
         df = pd.read_csv(filepath_or_buffer='ScrambledIPs.txt', header=None, sep=',')
         df.columns = ['IPSpoof', 'TrueIP', 'TTL']
         df.dropna(how="all", inplace=True)
@@ -97,8 +104,10 @@ class IDS():
         return allScrambled[index][0], allScrambled[index][2]
 
     def fileContainsIP(self, ipStr):
-        if (os.stat("ScrambledIPs.txt").st_size == 0):
+        print("contip")
+        if (os.path.getsize("ScrambledIPs.txt") == 0):
             return None, None, None
+        print("contiatna")
         df = pd.read_csv(filepath_or_buffer='ScrambledIPs.txt', header=None, sep=',')
         df.columns = ['IPSpoof', 'TrueIP', 'TTL']
         df.dropna(how="all", inplace=True)
@@ -111,13 +120,14 @@ class IDS():
 
     def generateRandomIP(self):
         validIP = False
+        print("generating")
         while (validIP == False):
             octet1 = randint(1, 223)
             octet2 = randint(0, 255)
             octet3 = randint(0, 255)
             # Not a blatantly obvious network or broadcast address
             octet4 = randint(1, 254)
-            if (validPublicIP(octet1, octet2, octet3)):
+            if self.validPublicIP(octet1, octet2, octet3):
                 validIP = True
         return str(octet1) + "." + str(octet2) + "." + \
                str(octet3) + "." + str(octet4)
