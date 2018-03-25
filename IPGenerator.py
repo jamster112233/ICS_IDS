@@ -2,7 +2,8 @@ from random import randint
 import pandas as pd
 import os
 
-def spoofIP(ipSrc, ipDst, ipTTL):
+def spoofIP(ipSrc):
+    print(ipSrc)
     spoofIP, realIP, spoofTTL = fileContainsIP(ipDst)
     if spoofIP == None:
         if randint(1,100) <= 30:

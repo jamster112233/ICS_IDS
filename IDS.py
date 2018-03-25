@@ -2,6 +2,7 @@ from netfilterqueue import NetfilterQueue
 from scapy.all import *
 import IPGenerator as ipg
 import os
+from random import randint
 
 MODBUS_SLAVE = 'ms.ics.example.com'
 response = ''
@@ -13,7 +14,7 @@ class IDS():
         f.close()
         os.system("iptables-restore < /etc/iptables/intall")
         nfqueue = NetfilterQueue()
-        nfqueue.bind(1, callback, 1024)
+        nfqueue.bind(1, self.callback, 1024)
         try:
             nfqueue.run()
         except KeyboardInterrupt:
@@ -22,10 +23,11 @@ class IDS():
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
-
-        spoof = True
+        print(randint(0,200))
+        spoof = False
         if spoof:
-            ipSrc, ipDst, ipTTL = ipg.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst)
+            print(sc_pkt[IP].src)
+            ipSrc, ipDst, ipTTL = ipg.spoofIP(123)
             sc_pkt[IP].src = ipSrc
             sc_pkt[IP].dst = ipDst
             sc_pkt[IP].ttl = ipTTL
