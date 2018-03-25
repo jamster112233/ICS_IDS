@@ -25,7 +25,6 @@ class IDS():
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
-
         spoof = True
         if spoof:
             ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst)
@@ -65,8 +64,9 @@ class IDS():
         pkt.set_payload(str(sc_pkt))
         pkt.accept()
 
-    def spoofIP(self, ipSrc, ipDst, ipTTL):
-        spoofIP, realIP, spoofTTL = self.fileContainsIP(ipDst)
+    def spoofIP(self, ipSrc, ipDst):
+        print(self)
+        spoofIP, realIP, spoofTTL = self.fileContainsIP(self, ipDst)
         if spoofIP == None:
             if randint(1, 100) <= 30:
                 spoofIP = self.generateRandomIP()
