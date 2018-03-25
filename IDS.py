@@ -10,8 +10,16 @@ response = ''
 
 class IDS():
     def __init__(self):
-        self.IPmap = {}
-        self.IPmap['IPX'] = "hola"
+        self.spoofIPs = {}
+        self.ipSource = '10.10.16.99'
+
+        validIPs = 0
+        while validIPs < 10:
+            spoofIP = self.generateRandomIP()
+            if not spoofIP in self.spoofIPs
+                spoofTTL = randint(32, 60)
+                self.spoofIPs[spoofIP] = [self.ipSource, spoofTTL]
+                validIPs += 1
 
     def run(self):
         f = open("IDS.txt", "w+")
@@ -71,54 +79,34 @@ class IDS():
         pkt.drop()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL):
-        print(self)
-        spoofIP, realIP, spoofTTL = self.fileContainsIP(ipDst)
-        print(spoofIP, realIP, spoofTTL)
-        if spoofIP == None:
+        #A -> V
+        if ipSrc in self.spoofIPs:
+            #Generating new IP 30%
             if randint(1, 100) <= 30:
                 spoofIP = self.generateRandomIP()
+                spoofTTL = randint(32, 60)
                 # Are we using this IP?
-                spoofIPres, realIP, spoofTTL = self.fileContainsIP(spoofIP)
-                if spoofIPres == None:
-                    spoofTTL = randint(32, 60)
-                    f = open("ScrambledIPs.txt", "a")
-                    f.write(spoofIP + "," + ipSrc + "," + str(spoofTTL) + "\n")
-                    f.close()
+                if spoofIP in self.spoofIPs:
+                    spoofTTL = self.spoofIPs[spoofIP][1]
+                else:
+                    self.spoofIPs[spoofIP] = [ipSrc, spoofTTL]
                 return spoofIP, ipDst, spoofTTL
+            #Using random existing IP
             else:
-                # 70% random source
-                spoofIP, ipReal, spoofTTL = self.getRandomIPFile()
+                spoofIP, ipReal, spoofTTL = self.getRandomIP()
                 return spoofIP, ipDst, spoofTTL
-        else:
+        #V -> A
+        elif ipDst in self.spoofIPs:
             # only backwards
             return ipSrc, realIP, ipTTL
+        #O -> O
+        else:
+            return ipSrc, ipDst, ipTTL
 
-    def getRandomIPFile(self):
-        if (os.path.getsize("ScrambledIPs.txt") == 0):
-            return None, None, None
-        print("reading")
-        df = pd.read_csv(filepath_or_buffer='ScrambledIPs.txt', header=None, sep=',')
-        df.columns = ['IPSpoof', 'TrueIP', 'TTL']
-        df.dropna(how="all", inplace=True)
-        df.tail()
-        allScrambled = df.ix[:, 0:3].values
-        index = randint(0, len(allScrambled))
-        return allScrambled[index][0], allScrambled[index][1], allScrambled[index][2]
-
-    def fileContainsIP(self, ipStr):
-        print("contip")
-        if (os.path.getsize("ScrambledIPs.txt") == 0):
-            return None, None, None
-        print("contiatna")
-        df = pd.read_csv(filepath_or_buffer='ScrambledIPs.txt', header=None, sep=',')
-        df.columns = ['IPSpoof', 'TrueIP', 'TTL']
-        df.dropna(how="all", inplace=True)
-        df.tail()
-        allScrambled = df.ix[:, 0:3].values
-        for ip in range(0, len(allScrambled)):
-            if allScrambled[ip][0] == ipStr:
-                return allScrambled[ip][0], allScrambled[ip][1], allScrambled[ip][2]
-        return None, None, None
+    def getRandomIP(self):
+        index = randint(0, len(self.spoofIPs.keys()))
+        key = list(self.spoofIPs.keys())[index]
+        return key, self.spoofIPs[key][0], self.spoofIPs[key][1]
 
     def generateRandomIP(self):
         validIP = False
