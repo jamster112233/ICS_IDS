@@ -11,12 +11,13 @@ response = ''
 class IDS():
     def __init__(self):
         self.spoofIPs = {}
+        self.staticAttackers = {'8.8.8.8': ['10.10.16.99',60]}
         self.ipSource = '10.10.16.99'
 
         validIPs = 0
         while validIPs < 10:
             spoofIP = self.generateRandomIP()
-            if not spoofIP in self.spoofIPs
+            if not spoofIP in self.spoofIPs:
                 spoofTTL = randint(32, 60)
                 self.spoofIPs[spoofIP] = [self.ipSource, spoofTTL]
                 validIPs += 1
@@ -37,7 +38,7 @@ class IDS():
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
         spoof = False
-        print(self.IPmap['IPX'])
+
         if(IP in sc_pkt):
             print "IP/", sys.stdout.write('')
             del sc_pkt[IP].chksum
@@ -56,7 +57,7 @@ class IDS():
             spoof = True
 
         if spoof:
-            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
+            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
             print(ipSrc, ipDst, ipTTL)
             sc_pkt[IP].src = ipSrc
             sc_pkt[IP].dst = ipDst
@@ -78,9 +79,21 @@ class IDS():
         send(sc_pkt)
         pkt.drop()
 
-    def spoofIP(self, ipSrc, ipDst, ipTTL):
-        #A -> V
-        if ipSrc in self.spoofIPs:
+    def spoofIP(self, ipSrc, ipDst, ipTTL, packCount):
+        print(self.spoofIPs)
+        #V -> A
+        if ipDst in self.staticAttackers:
+            # only backwards
+            return ipSrc, self.staticAttackers[ipDst][0], ipTTL
+        if len(self.staticAttackers) > 0:
+            return "8.8.8.8", ipDst, self.staticAttackers["8.8.8.8"][1]
+
+        #V -> A
+        if ipDst in self.spoofIPs:
+            # only backwards
+            return ipSrc, self.spoofIPs[ipDst][0], ipTTL
+        #A -> V / need spoofing
+        else:
             #Generating new IP 30%
             if randint(1, 100) <= 30:
                 spoofIP = self.generateRandomIP()
@@ -95,16 +108,9 @@ class IDS():
             else:
                 spoofIP, ipReal, spoofTTL = self.getRandomIP()
                 return spoofIP, ipDst, spoofTTL
-        #V -> A
-        elif ipDst in self.spoofIPs:
-            # only backwards
-            return ipSrc, realIP, ipTTL
-        #O -> O
-        else:
-            return ipSrc, ipDst, ipTTL
 
     def getRandomIP(self):
-        index = randint(0, len(self.spoofIPs.keys()))
+        index = randint(0, len(self.spoofIPs.keys()) - 1)
         key = list(self.spoofIPs.keys())[index]
         return key, self.spoofIPs[key][0], self.spoofIPs[key][1]
 
