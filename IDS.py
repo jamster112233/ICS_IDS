@@ -1,5 +1,5 @@
-from netfilterqueue import NetfilterQueue
 from scapy.all import *
+from netfilterqueue import NetfilterQueue
 from random import randint
 import pandas as pd
 import os
@@ -9,13 +9,17 @@ MODBUS_SLAVE = 'ms.ics.example.com'
 response = ''
 
 class IDS():
+    def __init__(self):
+        self.IPmap = {}
+        self.IPmap['IPX'] = "hola"
+
     def run(self):
         f = open("IDS.txt", "w+")
         f.write("START\n")
         f.close()
         os.system("iptables-restore < /etc/iptables/intall")
         nfqueue = NetfilterQueue()
-        nfqueue.bind(1, self.callback, 1024)
+        nfqueue.bind(1, self.callback)
         try:
             nfqueue.run()
         except KeyboardInterrupt:
@@ -24,15 +28,8 @@ class IDS():
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
-        spoof = True
-        print(os.path.getsize("ScrambledIPs.txt"))
-        if spoof:
-            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
-            print(ipSrc, ipDst, ipTTL)
-            sc_pkt[IP].src = ipSrc
-            sc_pkt[IP].dst = ipDst
-            sc_pkt[IP].ttl = int(ipTTL)
-
+        spoof = False
+        print(self.IPmap['IPX'])
         if(IP in sc_pkt):
             print "IP/", sys.stdout.write('')
             del sc_pkt[IP].chksum
@@ -48,6 +45,14 @@ class IDS():
         if(ICMP in sc_pkt):
             print "ICMP/", sys.stdout.write('')
             del sc_pkt[ICMP].chksum
+            spoof = True
+
+        if spoof:
+            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
+            print(ipSrc, ipDst, ipTTL)
+            sc_pkt[IP].src = ipSrc
+            sc_pkt[IP].dst = ipDst
+            sc_pkt[IP].ttl = int(ipTTL)
 
         log = False
         if log:
@@ -62,9 +67,8 @@ class IDS():
             f.close()
 
         sc_pkt.show2()
-        print(str(pkt))
-        pkt.set_payload(str(sc_pkt))
-        pkt.accept()
+        send(sc_pkt)
+        pkt.drop()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL):
         print(self)

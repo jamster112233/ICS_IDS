@@ -89,7 +89,7 @@ ipSrc = "10.10.16.101"
 f = open("ScrambledIPs.txt", "w+")
 f.close()
 
-for i in range(0, 1000):
+for i in range(0, 10):
     spoofIP = generateRandomIP()
     spoofIPres, realIP, spoofTTLres = fileContainsIP(spoofIP)
     if spoofIPres == None:
