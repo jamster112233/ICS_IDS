@@ -11,7 +11,7 @@ response = ''
 class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = {'8.8.8.8': ['10.10.16.99', 60]}
+        self.staticAttackers = {'8.8.8.8': ['10.10.16.101', 60]}
         self.ipSource = '10.10.16.101'
 
         validIPs = 0
@@ -33,7 +33,7 @@ class Spoofer():
             nfqueue.run()
         except KeyboardInterrupt:
             nfqueue.unbind()
-            os.system("iptables-restore < /etc/iptables/clean")
+            os.system("iptables-restore < /etc/iptables/rules.v4")
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
@@ -42,6 +42,7 @@ class Spoofer():
         sc_pkt[IP].src = ipSrc
         sc_pkt[IP].dst = ipDst
         sc_pkt[IP].ttl = int(ipTTL)
+
         sc_pkt.show2()
         send(sc_pkt)
         pkt.drop()
