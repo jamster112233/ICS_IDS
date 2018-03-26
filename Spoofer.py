@@ -42,7 +42,22 @@ class Spoofer():
         sc_pkt[IP].src = ipSrc
         sc_pkt[IP].dst = ipDst
         sc_pkt[IP].ttl = int(ipTTL)
+        if (IP in sc_pkt):
+            print "IP/", sys.stdout.write('')
+            del sc_pkt[IP].chksum
 
+        if (TCP in sc_pkt):
+            printv"TCP/", sys.stdout.write('')
+            del sc_pkt[TCP].chksum
+
+        if (UDP in sc_pkt):
+            print "UDP/", sys.stdout.write('')
+            del sc_pkt[UDP].chksum
+
+        if (ICMP in sc_pkt):
+            print "ICMP/", sys.stdout.write('')
+            del sc_pkt[ICMP].chksum
+            spoof = True
         sc_pkt.show2()
         send(sc_pkt)
         pkt.drop()
