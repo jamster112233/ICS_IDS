@@ -8,12 +8,16 @@ import sys
 MODBUS_SLAVE = 'ms.ics.example.com'
 response = ''
 
-class IDS():
+class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = {'8.8.8.8': ['10.10.16.99',60]}
-        self.ipSource = '10.10.16.99'
+        self.staticAttackers = \
+            {'8.8.8.8': ['10.10.16.101', 60],\
+             '8.8.4.4': ['10.10.16.101', 45],\
+             '1.1.1.1': ['10.10.16.101', 55]}
 
+        self.ipSource = '10.10.16.101'
+        conf.verb = 0
         validIPs = 0
         while validIPs < 10:
             spoofIP = self.generateRandomIP()
@@ -26,67 +30,58 @@ class IDS():
         f = open("IDS.txt", "w+")
         f.write("START\n")
         f.close()
-        os.system("iptables-restore < /etc/iptables/intall")
+        os.system("iptables-restore < /etc/iptables/fwdint")
         nfqueue = NetfilterQueue()
         nfqueue.bind(1, self.callback)
         try:
             nfqueue.run()
         except KeyboardInterrupt:
             nfqueue.unbind()
-            os.system("iptables-restore < /etc/iptables/clean")
+            os.system("iptables-restore < /etc/iptables/rules.v4")
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
         spoof = False
-
-        if(IP in sc_pkt):
+        print(sc_pkt[IP].src)
+        print(sc_pkt[IP].dst)
+        if (IP in sc_pkt):
             print "IP/", sys.stdout.write('')
             del sc_pkt[IP].chksum
+            spoof = True
 
-        if(TCP in sc_pkt):
+        if (TCP in sc_pkt):
             print "TCP/", sys.stdout.write('')
             del sc_pkt[TCP].chksum
 
-        if(UDP in sc_pkt):
+        if (UDP in sc_pkt):
             print "UDP/", sys.stdout.write('')
             del sc_pkt[UDP].chksum
 
-        if(ICMP in sc_pkt):
+        if (ICMP in sc_pkt):
             print "ICMP/", sys.stdout.write('')
             del sc_pkt[ICMP].chksum
-            spoof = True
 
         if spoof:
             ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
             print(ipSrc, ipDst, ipTTL)
             sc_pkt[IP].src = ipSrc
             sc_pkt[IP].dst = ipDst
-            sc_pkt[IP].ttl = int(ipTTL)
-
-        log = False
-        if log:
-            print("Logging Packet")
-            #packetIt = 0
-            f = open("IDS.txt", "a")
-            f.write('hping')
-            #while packetIt < len(ip_hex):
-                #f.write("," + str(float(int(ip_hex[packetIt:packetIt+2],16))/255))
-                #packetIt += 2
-            f.write("\n")
-            f.close()
+	    sc_pkt[IP].ttl = ipTTL
 
         sc_pkt.show2()
-        send(sc_pkt)
+        send(sc_pkt, verbose=False)
         pkt.drop()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL, packCount):
-        print(self.spoofIPs)
-        #V -> A
-        if ipDst in self.staticAttackers:
-            # only backwards
-            return ipSrc, self.staticAttackers[ipDst][0], ipTTL
         if len(self.staticAttackers) > 0:
-            return "8.8.8.8", ipDst, self.staticAttackers["8.8.8.8"][1]
+            #V -> A
+            if ipDst in self.staticAttackers:
+                print "V>A", ipSrc, self.staticAttackers[ipDst][0], ipTTL
+                return ipSrc, self.staticAttackers[ipDst][0], ipTTL
+            #A -> V / need spoofing
+            else:
+                spoofIP, ipReal, spoofTTL = self.getRandomSAIP()
+                return spoofIP, ipDst, spoofTTL
 
         #V -> A
         if ipDst in self.spoofIPs:
@@ -108,6 +103,11 @@ class IDS():
             else:
                 spoofIP, ipReal, spoofTTL = self.getRandomIP()
                 return spoofIP, ipDst, spoofTTL
+
+    def getRandomSAIP(self):
+        index = randint(0, len(self.staticAttackers.keys()) - 1)
+        key = list(self.staticAttackers.keys())[index]
+        return key, self.staticAttackers[key][0], self.staticAttackers[key][1]
 
     def getRandomIP(self):
         index = randint(0, len(self.spoofIPs.keys()) - 1)
@@ -167,5 +167,5 @@ class IDS():
         val = int(x, 16)
         return chr(val)
 
-ids = IDS()
-ids.run()
+spf = Spoofer()
+spf.run()
