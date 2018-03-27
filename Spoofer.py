@@ -11,9 +11,13 @@ response = ''
 class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = {'8.8.8.8': ['10.10.16.101', 60]}
-        self.ipSource = '10.10.16.101'
+        self.staticAttackers = \
+            {'8.8.8.8': ['10.10.16.101', 60],\
+             '8.8.4.4': ['10.10.16.101', 45],\
+             '1.1.1.1': ['10.10.16.101', 55]}
 
+        self.ipSource = '10.10.16.101'
+        conf.verb = 0
         validIPs = 0
         while validIPs < 10:
             spoofIP = self.generateRandomIP()
@@ -37,17 +41,16 @@ class Spoofer():
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
-        ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
-        print(ipSrc, ipDst, ipTTL)
-        sc_pkt[IP].src = ipSrc
-        sc_pkt[IP].dst = ipDst
-        sc_pkt[IP].ttl = int(ipTTL)
+        spoof = False
+        print(sc_pkt[IP].src)
+        print(sc_pkt[IP].dst)
         if (IP in sc_pkt):
             print "IP/", sys.stdout.write('')
             del sc_pkt[IP].chksum
+            spoof = True
 
         if (TCP in sc_pkt):
-            printv"TCP/", sys.stdout.write('')
+            print "TCP/", sys.stdout.write('')
             del sc_pkt[TCP].chksum
 
         if (UDP in sc_pkt):
@@ -57,15 +60,23 @@ class Spoofer():
         if (ICMP in sc_pkt):
             print "ICMP/", sys.stdout.write('')
             del sc_pkt[ICMP].chksum
-            spoof = True
+
+        if spoof:
+            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
+            print(ipSrc, ipDst, ipTTL)
+            sc_pkt[IP].src = ipSrc
+            sc_pkt[IP].dst = ipDst
+	    sc_pkt[IP].ttl = ipTTL
+
         sc_pkt.show2()
-        send(sc_pkt)
+        send(sc_pkt, verbose=False)
         pkt.drop()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL, packCount):
         if len(self.staticAttackers) > 0:
             #V -> A
             if ipDst in self.staticAttackers:
+                print "V>A", ipSrc, self.staticAttackers[ipDst][0], ipTTL
                 return ipSrc, self.staticAttackers[ipDst][0], ipTTL
             #A -> V / need spoofing
             else:
