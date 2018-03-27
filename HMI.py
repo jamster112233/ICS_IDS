@@ -1,3 +1,4 @@
+import sys
 import math
 import time
 import queue
@@ -13,14 +14,14 @@ MODBUS_SLAVE = 'ms.ics.example.com'
 
 ROOM_TEMP = 15
 TIME_STEP = 1
-TIME_PERIOD = 100000
+TIME_PERIOD = 7200
 WATER_LEVEL_INIT = 500000
 MEGA = 1000000
 HEATER_POWER = 2000 * MEGA
 OUT_EXP_POWER = HEATER_POWER * 0.6
 DEBUG = False
 
-random.seed(100)
+#random.seed(100)
 
 def addPlot(rows, cols, index, plt, xVals, yVals, xLabel, yLabel):
     plt.subplot(rows, cols, index)
@@ -151,6 +152,7 @@ while seconds < TIME_PERIOD + 2 or done:
     #Perfect attack scenario attack here - misinformation to master
     seconds += TIME_STEP
 
+sys.exit(0)
 fig, axis = plt.subplots(figsize=(12,8), nrows = 2, ncols = 3)
 
 axis[0,0] = addPlot(2, 3, 1, plt, secondsPlot, steamStepPlot, "Seconds (s)", "Steam Flow (Kg/s)")
