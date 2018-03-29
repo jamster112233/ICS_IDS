@@ -20,10 +20,10 @@ cmds=( "10.10.1.100"
        "hmi.ics.example.com"
      )
 
-for i in `seq 1 5000`;
+for i in `seq 1 1000`;
 do
     echo ==============
-    echo [$i / 5000]
+    echo [$i / 1000]
     echo ==============
     ping ${cmds[RANDOM % ${#cmds[@]}]} -c $(($RANDOM % 100))
     echo
