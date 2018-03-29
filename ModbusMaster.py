@@ -27,6 +27,9 @@ waterAddQ = queue.Queue()
 for i in range(0,10):
     waterAddQ.put(0)
 
+backoffFlag = False
+backoff = random.randint(1, 100)
+
 while True:
     #Read values from slave
     result = client.read_holding_registers(0, 21, unit=1)
@@ -61,6 +64,17 @@ while True:
 
     # Add fire? always
     addFire = 1
+    # Initiate backoff
+    if waterLevel >= 600000:
+        backoffFlag = True
+    elif waterLevel <= 505000 and backoff == 0:
+        backoffFlag = False
+        backoff = random.randint(1, 100)
+    else:
+        backoff -= 1
+
+    if not backoffFlag:
+        addFire = 2
 
     outputs = []
     outputs = ne.modbusEncode(addWater, 2, 2, outputs)
