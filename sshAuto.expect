@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+proc randomRangeString {length {chars "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"}} {
+    set range [expr {[string length $chars]-1}]
+
+    set txt ""
+    for {set i 0} {$i < $length} {incr i} {
+       set pos [expr {int(rand()*$range)}]
+       append txt [string range $chars $pos $pos]
+    }
+    return $txt
+}
+
+set ip [lindex $argv 0]
+spawn ssh root@$ip
+expect "assword:"
+send "toor\n"
+set i 0
+while {$i<502} {
+    expect "*~# "
+    send "echo $i [randomRangeString $i]\n"
+    incr i
+}
