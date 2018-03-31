@@ -108,3 +108,4 @@ venv.bak/
 *.txt
 *.sh
 !pinghosts.sh
+!autoSSH.sh
