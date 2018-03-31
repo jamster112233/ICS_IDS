@@ -20,3 +20,4 @@ while {$i<502} {
     send "echo $i [randomRangeString $i]\n"
     incr i
 }
+send "exit\n"
