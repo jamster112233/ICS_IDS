@@ -11,10 +11,10 @@ response = ''
 class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = \
-            {'8.8.8.8': ['10.10.16.101', 60],\
-             '8.8.4.4': ['10.10.16.101', 45],\
-             '1.1.1.1': ['10.10.16.101', 55]}
+        self.staticAttackers = {}\
+#            {'8.8.8.8': ['10.10.16.101', 60],\
+#             '8.8.4.4': ['10.10.16.101', 45],\
+#             '1.1.1.1': ['10.10.16.101', 55]}
 
         self.ipSource = '10.10.16.101'
         conf.verb = 0
@@ -47,7 +47,6 @@ class Spoofer():
         if (IP in sc_pkt):
             print "IP/", sys.stdout.write('')
             del sc_pkt[IP].chksum
-            spoof = True
 
         if (TCP in sc_pkt):
             print "TCP/", sys.stdout.write('')
@@ -60,6 +59,7 @@ class Spoofer():
         if (ICMP in sc_pkt):
             print "ICMP/", sys.stdout.write('')
             del sc_pkt[ICMP].chksum
+            spoof = True
 
         if spoof:
             ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
