@@ -52,32 +52,44 @@ if response == 'r':
 
     while serverSeconds < 7200:
         addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds = readRegisters()
-        if response == 1:
-            # 2,000L below optimal level
-            waterLevel = 500000 - 2000
-        if response == 2:
-            # 1,000L below optimal level
-            waterLevel = 500000 - 1000
-            steamStep *= 1.5
-        if response == 3:
-            # Constantly 1,000L below optimum level +- 15%
-            waterLevel = 500000 - (1000 * (float(random.randint(85, 115)) / 100))
-        if response == 4:
-            # Constantly 1,000L below optimum level +- 15% + steamStep
-            waterLevel = 500000 - (1000 * (float(random.randint(85, 115)) / 100)) + steamStep
-            steamStep += random.randint(275, 300)
+        if waterLevel < 600000:
+            if response == 1:
+                # 2,000L below optimal level
+                waterLevel = 500000 - 2000
+            if response == 2:
+                # 1,000L below optimal level
+                waterLevel = 500000 - 1000
+                steamStep *= 1.5
+            if response == 3:
+                # Constantly 1,000L below optimum level +- 15%
+                waterLevel = 500000 - (1000 * (float(random.randint(85, 115)) / 100))
+            if response == 4:
+                # Constantly 1,000L below optimum level +- 15% + steamStep
+                waterLevel = 500000 - (1000 * (float(random.randint(85, 115)) / 100)) + steamStep
+                steamStep += random.randint(275, 300)
 
-        outputs = []
-        outputs = ne.modbusEncode(waterLevel, 4, 4, outputs)
-        outputs = ne.modbusEncode(waterTemp, 2, 2, outputs)
-        outputs = ne.modbusEncode(powerOut, 6, 2, outputs)
-        outputs = ne.modbusEncode(steamStep, 2, 4, outputs)
-        outputs = ne.modbusEncode(powerIn, 6, 2, outputs)
+            outputs = []
+            outputs = ne.modbusEncode(waterLevel, 4, 4, outputs)
+            outputs = ne.modbusEncode(waterTemp, 2, 2, outputs)
+            outputs = ne.modbusEncode(powerOut, 6, 2, outputs)
+            outputs = ne.modbusEncode(steamStep, 2, 4, outputs)
+            outputs = ne.modbusEncode(powerIn, 6, 2, outputs)
 
-        write = client.write_registers(3, outputs, unit=1)
-        print(packetCount)
-        packetCount += 1
-        client.close()
+            write = client.write_registers(3, outputs, unit=1)
+            print(packetCount)
+            packetCount += 1
+        else:
+            outputs = []
+            outputs = ne.modbusEncode(0, 4, 4, outputs)
+            outputs = ne.modbusEncode(0, 2, 2, outputs)
+            outputs = ne.modbusEncode(0, 6, 2, outputs)
+            outputs = ne.modbusEncode(0, 2, 4, outputs)
+            outputs = ne.modbusEncode(0, 6, 2, outputs)
+            outputs = ne.modbusEncode(0, 2, 0, outputs)
+            write = client.write_registers(3, outputs, unit=1)
+            client.close()
+            client = ModbusTcpClient(MODBUS_SLAVE)
+
 
 if response == 'c':
     print("Enter stealth level:")
@@ -95,33 +107,38 @@ if response == 'c':
 
     response = int(response)
     while serverSeconds < 7200:
-        time.sleep(0.01)
         addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds = readRegisters()
-        if response == 1:
-            # 1,500L constant fill, no fire
-            addWater = 1500
-            addFire = 0
-        if response == 2:
-            # 1,500L constant fill, current fire state
-            addWater = 1500
-        if response == 3:
-            # 1,500L constant fill +- 10%, current fire state
-            addWater = 1500 * (random.randint(90, 110) / 100)
-        if response == 4:
-            # Add water value + 0-5%, if no fire, + 5-10% if fire
-            if addFire:
-                addWater = 500 + (addWater * (random.randint(105, 110) / 100))
-            else:
-                addWater = 500 + (addWater * (random.randint(100, 105) / 100))
+        if waterLevel < 600000:
+            if response == 1:
+                # 1,500L constant fill, no fire
+                addWater = 1500
+                addFire = 0
+            if response == 2:
+                # 1,500L constant fill, current fire state
+                addWater = 1500
+            if response == 3:
+                # 1,500L constant fill +- 10%, current fire state
+                addWater = 1500 * (random.randint(90, 110) / 100)
+            if response == 4:
+                # Add water value + 0-5%, if no fire, + 5-10% if fire
+                if addFire:
+                    addWater = 500 + (addWater * (random.randint(105, 110) / 100))
+                else:
+                    addWater = 500 + (addWater * (random.randint(100, 105) / 100))
 
-        outputs = []
-        outputs = ne.modbusEncode(addWater, 2, 2, outputs)
-        outputs = ne.modbusEncode(addFire, 2, 0, outputs)
-        write = client.write_registers(0, outputs, unit=1)
-        packetCount += 1
-        print(packetCount)
-    client.close()
-    exit(0)
+            packetCount += 1
+            print(packetCount)
+            outputs = []
+            outputs = ne.modbusEncode(addWater, 2, 2, outputs)
+            outputs = ne.modbusEncode(addFire, 2, 0, outputs)
+            write = client.write_registers(0, outputs, unit=1)
+        else:
+            outputs = []
+            outputs = ne.modbusEncode(0, 2, 2, outputs)
+            outputs = ne.modbusEncode(3, 2, 0, outputs)
+            write = client.write_registers(0, outputs, unit=1)
+            client.close()
+            client = ModbusTcpClient(MODBUS_SLAVE)
 
 client.close()
 

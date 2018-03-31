@@ -2,21 +2,25 @@ from scapy.all import *
 from netfilterqueue import NetfilterQueue
 from random import randint
 import pandas as pd
+import NetworkEncoder as ne
 import os
 import sys
 
 MODBUS_SLAVE = 'ms.ics.example.com'
+MODBUS_SLAVE_IP = '10.10.3.101'
 response = ''
 
 class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = \
-            {'8.8.8.8': ['10.10.16.101', 60]}
+        self.staticAttackers = {}#\
+#            {'8.8.8.8': ['10.10.16.101', 60]}
 #             '8.8.4.4': ['10.10.16.101', 45],\
 #             '1.1.1.1': ['10.10.16.101', 55]}
 
+
         self.ipSource = '10.10.16.101'
+
         conf.verb = 0
         validIPs = 0
         while validIPs < 10:
@@ -25,6 +29,8 @@ class Spoofer():
                 spoofTTL = randint(32, 60)
                 self.spoofIPs[spoofIP] = [self.ipSource, spoofTTL]
                 validIPs += 1
+
+        self.spoofIPPointer = list(self.spoofIPs.keys())[0]
 
     def run(self):
         f = open("IDS.txt", "w+")
@@ -41,6 +47,7 @@ class Spoofer():
 
     def callback(self, pkt):
         sc_pkt = IP(pkt.get_payload())
+        ip_hex = self.toHex(str(sc_pkt))
         spoof = False
         print(sc_pkt[IP].src)
         print(sc_pkt[IP].dst)
@@ -65,21 +72,76 @@ class Spoofer():
             print "DNS/", sys.stdout.write('')
             spoof = False
 
-        if spoof:
-            ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
-            print(ipSrc, ipDst, ipTTL)
-            sc_pkt[IP].src = ipSrc
-            sc_pkt[IP].dst = ipDst
-	    sc_pkt[IP].ttl = ipTTL
+        #RIA
+        if sc_pkt[IP].dst == MODBUS_SLAVE_IP and sc_pkt[TCP].dport == 502 and ip_hex[118:120] == '10' \
+                and ip_hex[124:130] == '001224':
+            # Decode
+            registers = []
+
+            for i in range(0, 18):
+                index = 130 + (4 * i)
+                registers.append(int(ip_hex[index:index + 4], 16))
+
+            waterLevel = ne.modbusDecode(0, 4, 4, registers)
+            waterTemp = ne.modbusDecode(4, 2, 2, registers)
+            powerOut = ne.modbusDecode(6, 6, 2, registers)
+            steamStep = ne.modbusDecode(10, 2, 4, registers)
+            powerIn = ne.modbusDecode(13, 6, 2, registers)
+            serverSeconds = ne.modbusDecode(17, 2, 0, registers)
+
+            # reset and boomerang
+            if (waterLevel + waterTemp + powerOut + steamStep + powerIn + serverSeconds) == 0:
+                tmpIP = sc_pkt[IP].dst
+                sc_pkt[IP].dst = sc_pkt[IP].src
+                sc_pkt[IP].src = tmpIP
+                sc_pkt[Raw].load = sc_pkt[Raw].load[0:4] + chr(int('06', 16)) + sc_pkt[Raw].load[6:13]
+                self.spoofIPPointer = list(self.spoofIPs.keys())[randint(0, len(self.staticAttackers.keys()) - 1)]
+                sc_pkt.show2()
+                send(sc_pkt, verbose=False)
+                pkt.drop()
+                return
+        #CIA
+        if sc_pkt[IP].dst == MODBUS_SLAVE_IP and sc_pkt[TCP].dport == 502 and ip_hex[118:120] == '10' \
+                and ip_hex[128:130] == '06':
+                # Decode
+                registers = []
+
+                for i in range(0, 3):
+                    index = 130 + (4 * i)
+                    registers.append(int(ip_hex[index:index + 4], 16))
+
+                addWater = ne.modbusDecode(0, 2, 2, registers)
+                addFire = ne.modbusDecode(2, 2, 0, registers)
+
+                # reset and boomerang
+                if addFire == 3:
+                    tmpIP = sc_pkt[IP].dst
+                    sc_pkt[IP].dst = sc_pkt[IP].src
+                    sc_pkt[IP].src = tmpIP
+                    sc_pkt[Raw].load = sc_pkt[Raw].load[0:4] + chr(int('06', 16)) + sc_pkt[Raw].load[6:13]
+                    self.spoofIPPointer = list(self.spoofIPs.keys())[randint(0, len(self.staticAttackers.keys()) - 1)]
+                    sc_pkt.show2()
+                    send(sc_pkt, verbose=False)
+                    pkt.drop()
+                    return
 
         if sc_pkt[IP].dst == "10.10.255.254":
             pkt.accept()
-        else:
-            sc_pkt.show2()
-            send(sc_pkt, verbose=False)
-            pkt.drop()
+            return
 
-    def spoofIP(self, ipSrc, ipDst, ipTTL, packCount):
+        if spoof:
+            ipSrc, ipDst, ipTTL = self.semiSpoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl)
+            print(ipSrc, ipDst, ipTTL)
+            sc_pkt[IP].src = ipSrc
+            sc_pkt[IP].dst = ipDst
+            sc_pkt[IP].ttl = ipTTL
+
+        #TODO
+        sc_pkt.show2()
+        send(sc_pkt, verbose=False)
+        pkt.drop()
+
+    def spoofIP(self, ipSrc, ipDst, ipTTL):
         if len(self.staticAttackers) > 0:
             #V -> A
             if ipDst in self.staticAttackers:
@@ -110,6 +172,23 @@ class Spoofer():
             else:
                 spoofIP, ipReal, spoofTTL = self.getRandomIP()
                 return spoofIP, ipDst, spoofTTL
+
+    def semiSpoofIP(self, ipSrc, ipDst, ipTTL):
+        if len(self.staticAttackers) > 0:
+            # V -> A
+            if ipDst == self.spoofIPPointer:
+                return ipSrc, self.staticAttackers[ipDst][0], ipTTL
+            # A -> V / need spoofing
+            else:
+                return self.spoofIPPointer, self.staticAttackers[self.spoofIPPointer][0], self.staticAttackers[self.spoofIPPointer][1]
+
+        # V -> A
+        if ipDst == self.spoofIPPointer:
+            # only backwards
+            return ipSrc, self.spoofIPs[ipDst][0], ipTTL
+        # A -> V / need spoofing
+        else:
+            return self.spoofIPPointer, self.spoofIPs[self.spoofIPPointer][0], self.spoofIPs[self.spoofIPPointer][1]
 
     def getRandomSAIP(self):
         index = randint(0, len(self.staticAttackers.keys()) - 1)
