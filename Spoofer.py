@@ -11,8 +11,8 @@ response = ''
 class Spoofer():
     def __init__(self):
         self.spoofIPs = {}
-        self.staticAttackers = {}\
-#            {'8.8.8.8': ['10.10.16.101', 60],\
+        self.staticAttackers = \
+            {'8.8.8.8': ['10.10.16.101', 60]}
 #             '8.8.4.4': ['10.10.16.101', 45],\
 #             '1.1.1.1': ['10.10.16.101', 55]}
 
@@ -51,6 +51,7 @@ class Spoofer():
         if (TCP in sc_pkt):
             print "TCP/", sys.stdout.write('')
             del sc_pkt[TCP].chksum
+            spoof = True
 
         if (UDP in sc_pkt):
             print "UDP/", sys.stdout.write('')
@@ -59,7 +60,10 @@ class Spoofer():
         if (ICMP in sc_pkt):
             print "ICMP/", sys.stdout.write('')
             del sc_pkt[ICMP].chksum
-            spoof = True
+
+        if (DNS in sc_pkt):
+            print "DNS/", sys.stdout.write('')
+            spoof = False
 
         if spoof:
             ipSrc, ipDst, ipTTL = self.spoofIP(sc_pkt[IP].src, sc_pkt[IP].dst, sc_pkt[IP].ttl, 1)
@@ -68,9 +72,12 @@ class Spoofer():
             sc_pkt[IP].dst = ipDst
 	    sc_pkt[IP].ttl = ipTTL
 
-        sc_pkt.show2()
-        send(sc_pkt, verbose=False)
-        pkt.drop()
+        if sc_pkt[IP].dst == "10.10.255.254":
+            pkt.accept()
+        else:
+            sc_pkt.show2()
+            send(sc_pkt, verbose=False)
+            pkt.drop()
 
     def spoofIP(self, ipSrc, ipDst, ipTTL, packCount):
         if len(self.staticAttackers) > 0:
